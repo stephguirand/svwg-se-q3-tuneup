@@ -5,20 +5,42 @@
 Use the timeit and cProfile libraries to find bad code.
 """
 
-__author__ = "???"
+__author__ = """
+stephguirand
+Help from demo, lessons and activities, youtube videos in canvas and
+own search on youtube,
+stack overflow, Tutors, Facilitators and talking about assignment
+in study group.
+"""
 
-import cProfile
+import cProfile as c
 import pstats
-import functools
+# import functools
+import timeit
+from collections import Counter
+
+"""A cProfile decorator function that can be used to
+    measure performance.
+    """
+# Be sure to review the lesson material on decorators.
+# You need to understand how they are constructed and used.
 
 
 def profile(func):
-    """A cProfile decorator function that can be used to
-    measure performance.
-    """
-    # Be sure to review the lesson material on decorators.
-    # You need to understand how they are constructed and used.
-    raise NotImplementedError("Complete this decorator function")
+    # raise NotImplementedError("Complete this decorator function")
+
+    # nesting a function to perform more functions....
+
+    def inner(*args, **kwargs):
+        pr = c.Profile()
+        pr.enable()
+        result = func(*args, **kwargs)
+        pr.disable()
+        sort_by = 'cumulative'
+        ps = pstats.Stats(pr).sort_stats(sort_by)
+        ps.print_stats()
+        return result
+    return inner
 
 
 def read_movies(src):
@@ -33,9 +55,12 @@ def is_duplicate(title, movies):
     for movie in movies:
         if movie.lower() == title.lower():
             return True
+    if title in movies:
+        return True
     return False
 
 
+@profile
 def find_duplicate_movies(src):
     """Returns a list of duplicate movies from a src list."""
     # Not optimized
@@ -50,23 +75,32 @@ def find_duplicate_movies(src):
 #
 # Students: write a better version of find_duplicate_movies
 #
+
+
 def optimized_find_duplicate_movies(src):
-    # Your code here
-    return
+    movies = read_movies(src)
+    counter_for_movies = Counter(movies)
+    duplicates = [movie for movie,
+                  val in counter_for_movies.items() if val > 1]
+    return duplicates
 
 
 def timeit_helper(func_name, func_param):
     """Part A: Obtain some profiling measurements using timeit"""
     assert isinstance(func_name, str)
-    # stmt = ???
-    # setup = ???
-    # t = ???
-    # runs_per_repeat = 3
-    # num_repeats = 5
-    # result = t.repeat(repeat=num_repeats, number=runs_per_repeat)
-    # time_cost = ???
-    # print(f"func={func_name}  num_repeats={num_repeats} runs_per_repeat={runs_per_repeat} time_cost={time_cost:.3f} sec")
-    # return t
+    # f"find_duplicate_movies('movies.txt')"
+    stmt = f"{func_name}('{func_param}')"
+    setup = f'from {__name__} import {func_name}'
+    t = timeit.Timer(stmt, setup)
+    runs_per_repeat = 3
+    num_repeats = 5
+    result = t.repeat(repeat=num_repeats, number=runs_per_repeat)
+    time_cost = min(result) / runs_per_repeat
+    print(
+        f"func={func_name}  num_repeats={num_repeats}\
+             runs_per_repeat={runs_per_repeat} time_cost={time_cost:.3f} sec"
+    )
+    return t
 
 
 def main():
@@ -90,9 +124,10 @@ def main():
 
     print("\n--- cProfile results, before optimization ---")
     profile(find_duplicate_movies)(filename)
-    
+
     print("\n--- cProfile results, after optimization ---")
     profile(optimized_find_duplicate_movies)(filename)
+
 
 if __name__ == '__main__':
     main()
